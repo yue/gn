@@ -150,6 +150,12 @@ Value RunExecScript(Scope* scope,
     script_path =
         build_settings->GetFullPathSecondary(script_source_path, true);
   }
+  if (build_settings->IsChromiumPath(script_source_path) &&
+      !base::PathExists(script_path)) {
+    // Fall back to chromium config when the file doesn't exist.
+    script_path =
+        build_settings->GetFullPathChromium(script_source_path, true);
+  }
 
   ScopedTrace trace(TraceItem::TRACE_SCRIPT_EXECUTE, script_source_path);
   trace.SetToolchain(settings->toolchain_label());

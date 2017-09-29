@@ -553,6 +553,13 @@ Value RunDefined(Scope* scope,
     // Passed an identifier "defined(foo)".
     if (scope->GetValue(identifier->value().value()))
       return Value(function, true);
+    if (scope->settings()->build_settings()->use_chromium_config()) {
+      // Hack to identify whether it is official gn.
+      if (identifier->value().value() == "use_chromium_config")
+        return Value(function, true);
+      if (identifier->value().value() == "chromium_config_dir")
+        return Value(function, true);
+    }
     return Value(function, false);
   }
 

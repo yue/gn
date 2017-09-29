@@ -61,11 +61,14 @@ bool DoLoadFile(const LocationRange& origin,
       return false;
     }
   } else if (!file->Load(primary_path)) {
+    bool success = false;
     if (!build_settings->secondary_source_path().empty()) {
       // Fall back to secondary source tree.
       base::FilePath secondary_path =
           build_settings->GetFullPathSecondary(name);
-      if (!file->Load(secondary_path)) {
+      if (file->Load(secondary_path)) {
+        success = true;
+      } else if (!build_settings->use_chromium_config()) {
         *err = Err(origin, "Can't load input file.",
                    "Unable to load:\n  " + FilePathToUTF8(primary_path) +
                        "\n"
@@ -73,7 +76,12 @@ bool DoLoadFile(const LocationRange& origin,
                        FilePathToUTF8(secondary_path));
         return false;
       }
-    } else {
+    }
+    if (!success && build_settings->use_chromium_config()) {
+      if (file->Load(build_settings->GetFullPathChromium(name)))
+        success = true;
+    }
+    if (!success) {
       *err = Err(origin,
                  "Unable to load \"" + FilePathToUTF8(primary_path) + "\".");
       return false;

@@ -68,6 +68,8 @@ struct RelativeFileConverter {
   bool operator()(const Value& v, SourceFile* out, Err* err) const {
     *out = current_dir.ResolveRelativeFile(v, err,
                                            build_settings->root_path_utf8());
+    if (build_settings->IsChromiumPath(*out))
+      *out = SourceFile(build_settings->TranslateChromiumPath(*out));
     return !err->has_error();
   }
   const BuildSettings* build_settings;
@@ -89,8 +91,11 @@ struct LibFileConverter {
     if (v.string_value().find('/') == std::string::npos) {
       *out = LibFile(v.string_value());
     } else {
-      *out = LibFile(current_dir.ResolveRelativeFile(
-          v, err, build_settings->root_path_utf8()));
+      SourceFile lib_file = current_dir.ResolveRelativeFile(
+          v, err, build_settings->root_path_utf8());
+      if (build_settings->IsChromiumPath(lib_file))
+        lib_file = SourceFile(build_settings->TranslateChromiumPath(lib_file));
+      *out = LibFile(lib_file);
     }
     return !err->has_error();
   }
@@ -105,6 +110,8 @@ struct RelativeDirConverter {
   bool operator()(const Value& v, SourceDir* out, Err* err) const {
     *out = current_dir.ResolveRelativeDir(v, err,
                                           build_settings->root_path_utf8());
+    if (build_settings->IsChromiumPath(*out))
+      *out = SourceDir(build_settings->TranslateChromiumPath(*out));
     return true;
   }
   const BuildSettings* build_settings;
