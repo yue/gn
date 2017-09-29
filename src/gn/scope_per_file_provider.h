@@ -34,6 +34,9 @@ class ScopePerFileProvider : public Scope::ProgrammaticProvider {
   const Value* GetTargetGenDir();
   const Value* GetTargetOutDir();
 
+  const Value* GetUseChromiumConfig();
+  const Value* GetChromiumConfigDir();
+
   bool allow_target_vars_;
 
   // All values are lazily created.
@@ -46,6 +49,9 @@ class ScopePerFileProvider : public Scope::ProgrammaticProvider {
   std::unique_ptr<Value> root_out_dir_;
   std::unique_ptr<Value> target_gen_dir_;
   std::unique_ptr<Value> target_out_dir_;
+
+  std::unique_ptr<Value> use_chromium_config_;
+  std::unique_ptr<Value> chromium_config_dir_;
 
   DISALLOW_COPY_AND_ASSIGN(ScopePerFileProvider);
 };
