@@ -68,6 +68,8 @@ struct RelativeFileConverter {
   bool operator()(const Value& v, SourceFile* out, Err* err) const {
     *out = current_dir.ResolveRelativeFile(v, err,
                                            build_settings->root_path_utf8());
+    if (build_settings->IsChromiumPath(*out))
+      *out = SourceFile(build_settings->TranslateChromiumPath(*out));
     return !err->has_error();
   }
   const BuildSettings* build_settings;
@@ -105,6 +107,8 @@ struct RelativeDirConverter {
   bool operator()(const Value& v, SourceDir* out, Err* err) const {
     *out = current_dir.ResolveRelativeDir(v, err,
                                           build_settings->root_path_utf8());
+    if (build_settings->IsChromiumPath(*out))
+      *out = SourceDir(build_settings->TranslateChromiumPath(*out));
     return true;
   }
   const BuildSettings* build_settings;

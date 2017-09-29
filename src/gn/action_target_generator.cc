@@ -4,6 +4,7 @@
 
 #include "gn/action_target_generator.h"
 
+#include "base/files/file_util.h"
 #include "base/stl_util.h"
 #include "gn/build_settings.h"
 #include "gn/config_values_generator.h"
@@ -119,6 +120,15 @@ bool ActionTargetGenerator::FillScript() {
       *value, err_, scope_->settings()->build_settings()->root_path_utf8());
   if (err_->has_error())
     return false;
+  auto* build_settings = scope_->settings()->build_settings();
+  if (build_settings->IsChromiumPath(script_file)) {
+    base::FilePath script_path = build_settings->GetFullPath(script_file);
+    if (!base::PathExists(script_path)) {
+      // Fall back to chromium config when the file doesn't exist.
+      script_file =
+          SourceFile(build_settings->TranslateChromiumPath(script_file));
+    }
+  }
   target_->action_values().set_script(script_file);
   return true;
 }
