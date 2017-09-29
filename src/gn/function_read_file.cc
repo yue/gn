@@ -60,6 +60,13 @@ Value RunReadFile(Scope* scope,
   base::FilePath file_path =
       scope->settings()->build_settings()->GetFullPath(source_file);
 
+  if (scope->settings()->build_settings()->use_chromium_config() &&
+      !base::PathExists(file_path)) {
+    file_path =
+        scope->settings()->build_settings()->GetFullPathChromium(source_file);
+  }
+
+
   // Ensure that everything is recomputed if the read file changes.
   g_scheduler->AddGenDependency(file_path);
 

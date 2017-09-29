@@ -119,6 +119,15 @@ bool ActionTargetGenerator::FillScript() {
       *value, err_, scope_->settings()->build_settings()->root_path_utf8());
   if (err_->has_error())
     return false;
+  auto* build_settings = scope_->settings()->build_settings();
+  if (build_settings->use_chromium_config()) {
+    std::string p = FilePathToUTF8(
+        build_settings->GetFullPathChromium(script_file));
+#if defined(OS_WIN)
+    p = "/" + p;
+#endif
+    script_file = SourceFile(p);
+  }
   target_->action_values().set_script(script_file);
   return true;
 }
