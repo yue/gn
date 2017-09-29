@@ -7,16 +7,21 @@
 #include <utility>
 
 #include "base/files/file_util.h"
+#include "base/path_service.h"
 #include "tools/gn/filesystem_utils.h"
 
 BuildSettings::BuildSettings() {
+  PathService::Get(base::DIR_EXE, &chromium_config_path_);
+  chromium_config_path_utf8_ = FilePathToUTF8(chromium_config_path_);
 }
 
 BuildSettings::BuildSettings(const BuildSettings& other)
     : root_path_(other.root_path_),
       root_path_utf8_(other.root_path_utf8_),
       secondary_source_path_(other.secondary_source_path_),
+      chromium_config_path_(other.chromium_config_path_),
       python_path_(other.python_path_),
+      use_chromium_config_(other.use_chromium_config_),
       build_config_file_(other.build_config_file_),
       arg_file_template_path_(other.arg_file_template_path_),
       build_dir_(other.build_dir_),
@@ -59,6 +64,16 @@ base::FilePath BuildSettings::GetFullPathSecondary(
 base::FilePath BuildSettings::GetFullPathSecondary(
     const SourceDir& dir) const {
   return dir.Resolve(secondary_source_path_).NormalizePathSeparatorsTo('/');
+}
+
+base::FilePath BuildSettings::GetFullPathChromium(
+    const SourceFile& file) const {
+  return file.Resolve(chromium_config_path_).NormalizePathSeparatorsTo('/');
+}
+
+base::FilePath BuildSettings::GetFullPathChromium(
+    const SourceDir& dir) const {
+  return dir.Resolve(chromium_config_path_).NormalizePathSeparatorsTo('/');
 }
 
 void BuildSettings::ItemDefined(std::unique_ptr<Item> item) const {

@@ -26,6 +26,16 @@ bool Config::OnResolved(Err* err) {
   DCHECK(!resolved_);
   resolved_ = true;
 
+  if (settings()->build_settings()->use_chromium_config() &&
+      label().name() == "default_include_dirs") {
+    std::string filepath =
+        settings()->build_settings()->chromium_config_path_utf8();
+#if defined(OS_WIN)
+    filepath = "/" + filepath;
+#endif
+    own_values_.include_dirs().push_back(SourceDir(filepath));
+  }
+
   if (!configs_.empty()) {
     // Subconfigs, flatten.
     //
