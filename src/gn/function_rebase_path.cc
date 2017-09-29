@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 
+#include "base/strings/string_util.h"
 #include "gn/build_settings.h"
 #include "gn/filesystem_utils.h"
 #include "gn/functions.h"
@@ -68,19 +69,44 @@ Value ConvertOnePath(const Scope* scope,
 
   bool looks_like_dir = ValueLooksLikeDir(string_value);
 
+  // Convert to abosulte if we are referencing files under chromium buildconfig.
+  bool is_chromium_build_config = false;
+  if (scope->settings()->build_settings()->use_chromium_config()) {
+    std::string rp = looks_like_dir ?
+        from_dir.ResolveRelativeDir(value, err,
+            scope->settings()->build_settings()->root_path_utf8()).value() :
+        from_dir.ResolveRelativeFile(value, err,
+            scope->settings()->build_settings()->root_path_utf8()).value();
+    is_chromium_build_config = scope->settings()->build_settings()->IsChromiumPath(rp);
+  }
+
   // System-absolute output special case.
   if (convert_to_system_absolute) {
     base::FilePath system_path;
     if (looks_like_dir) {
-      system_path = scope->settings()->build_settings()->GetFullPath(
-          from_dir.ResolveRelativeDir(
-              value, err,
-              scope->settings()->build_settings()->root_path_utf8()));
+      if (is_chromium_build_config) {
+        system_path = scope->settings()->build_settings()->GetFullPathChromium(
+            from_dir.ResolveRelativeDir(
+                value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      } else {
+        system_path = scope->settings()->build_settings()->GetFullPath(
+            from_dir.ResolveRelativeDir(
+                value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      }
     } else {
-      system_path = scope->settings()->build_settings()->GetFullPath(
-          from_dir.ResolveRelativeFile(
-              value, err,
-              scope->settings()->build_settings()->root_path_utf8()));
+      if (is_chromium_build_config) {
+        system_path = scope->settings()->build_settings()->GetFullPathChromium(
+            from_dir.ResolveRelativeFile(
+                value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      } else {
+        system_path = scope->settings()->build_settings()->GetFullPath(
+            from_dir.ResolveRelativeFile(
+                value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      }
     }
     if (err->has_error())
       return Value();
@@ -91,14 +117,22 @@ Value ConvertOnePath(const Scope* scope,
     return result;
   }
 
+  if (is_chromium_build_config && to_dir.value() == "//")
+    is_chromium_build_config = false;
+
   result = Value(function, Value::STRING);
   if (looks_like_dir) {
+    SourceDir resolved_dir = from_dir.ResolveRelativeDir(
+        value, err, scope->settings()->build_settings()->root_path_utf8());
+    if (err->has_error())
+      return Value();
+    if (is_chromium_build_config) {
+      resolved_dir = SourceDir(FilePathToUTF8(
+          scope->settings()->build_settings()->GetFullPathChromium(
+              resolved_dir)));
+    }
     result.string_value() = RebasePath(
-        from_dir
-            .ResolveRelativeDir(
-                value, err,
-                scope->settings()->build_settings()->root_path_utf8())
-            .value(),
+        resolved_dir.value(),
         to_dir, scope->settings()->build_settings()->root_path_utf8());
     MakeSlashEndingMatchInput(string_value, &result.string_value());
   } else {
@@ -106,6 +140,11 @@ Value ConvertOnePath(const Scope* scope,
         value, err, scope->settings()->build_settings()->root_path_utf8());
     if (err->has_error())
       return Value();
+    if (is_chromium_build_config) {
+      resolved_file = SourceFile(FilePathToUTF8(
+          scope->settings()->build_settings()->GetFullPathChromium(
+              resolved_file)));
+    }
     result.string_value() =
         RebasePath(resolved_file.value(), to_dir,
                    scope->settings()->build_settings()->root_path_utf8());
