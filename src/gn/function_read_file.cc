@@ -61,6 +61,13 @@ Value RunReadFile(Scope* scope,
   base::FilePath file_path =
       scope->settings()->build_settings()->GetFullPath(source_file);
 
+  const BuildSettings* build_settings = scope->settings()->build_settings();
+  if (build_settings->IsChromiumPath(source_file.value()) &&
+      !base::PathExists(file_path)) {
+    // Fall back to chromium config when the file doesn't exist.
+    file_path = build_settings->GetFullPathChromium(source_file);
+  }
+
   // Ensure that everything is recomputed if the read file changes.
   g_scheduler->AddGenDependency(file_path);
 
