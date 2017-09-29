@@ -9,6 +9,7 @@
 #include "gn/build_settings.h"
 #include "gn/err.h"
 #include "gn/frameworks_utils.h"
+#include "gn/filesystem_utils.h"
 #include "gn/label.h"
 #include "gn/source_dir.h"
 #include "gn/source_file.h"
@@ -66,8 +67,17 @@ struct RelativeFileConverter {
                         const SourceDir& current_dir_in)
       : build_settings(build_settings_in), current_dir(current_dir_in) {}
   bool operator()(const Value& v, SourceFile* out, Err* err) const {
-    *out = current_dir.ResolveRelativeFile(v, err,
-                                           build_settings->root_path_utf8());
+    SourceFile rf = current_dir.ResolveRelativeFile(
+        v, err, build_settings->root_path_utf8());
+    if (build_settings->IsChromiumPath(rf.value())) {
+      std::string p = FilePathToUTF8(build_settings->GetFullPathChromium(rf));
+#if defined(OS_WIN)
+      p = "/" + p;
+#endif
+      *out = SourceFile(p);
+    } else {
+      *out = rf;
+    }
     return !err->has_error();
   }
   const BuildSettings* build_settings;
@@ -103,8 +113,17 @@ struct RelativeDirConverter {
                        const SourceDir& current_dir_in)
       : build_settings(build_settings_in), current_dir(current_dir_in) {}
   bool operator()(const Value& v, SourceDir* out, Err* err) const {
-    *out = current_dir.ResolveRelativeDir(v, err,
-                                          build_settings->root_path_utf8());
+    SourceDir rd = current_dir.ResolveRelativeDir(
+        v, err, build_settings->root_path_utf8());
+    if (build_settings->IsChromiumPath(rd.value())) {
+      std::string p = FilePathToUTF8(build_settings->GetFullPathChromium(rd));
+#if defined(OS_WIN)
+      p = "/" + p;
+#endif
+      *out = SourceDir(p);
+    } else {
+      *out = rd;
+    }
     return true;
   }
   const BuildSettings* build_settings;
