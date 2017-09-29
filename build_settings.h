@@ -50,9 +50,22 @@ class BuildSettings {
   }
   void SetSecondarySourcePath(const SourceDir& d);
 
+  // The dir that includes the gn executable file, which is used as fallback
+  // directory after search failure in secondary_source_path.
+  const base::FilePath& chromium_config_path() const {
+    return chromium_config_path_;
+  }
+  const std::string& chromium_config_path_utf8() const {
+     return chromium_config_path_utf8_;
+  }
+
   // Path of the python executable to run scripts with.
   base::FilePath python_path() const { return python_path_; }
   void set_python_path(const base::FilePath& p) { python_path_ = p; }
+
+  // Whether this build uses preset Chromium buildconfig.
+  bool use_chromium_config() const { return use_chromium_config_; }
+  void set_use_chromium_config(bool u) { use_chromium_config_ = u; }
 
   const SourceFile& build_config_file() const { return build_config_file_; }
   void set_build_config_file(const SourceFile& f) { build_config_file_ = f; }
@@ -86,6 +99,10 @@ class BuildSettings {
   base::FilePath GetFullPathSecondary(const SourceFile& file) const;
   base::FilePath GetFullPathSecondary(const SourceDir& dir) const;
 
+  // Returns the absolute OS path inside the fallback source path.
+  base::FilePath GetFullPathChromium(const SourceFile& file) const;
+  base::FilePath GetFullPathChromium(const SourceDir& dir) const;
+
   // Called when an item is defined from a background thread.
   void ItemDefined(std::unique_ptr<Item> item) const;
   void set_item_defined_callback(ItemDefinedCallback cb) {
@@ -113,7 +130,11 @@ class BuildSettings {
   base::FilePath root_path_;
   std::string root_path_utf8_;
   base::FilePath secondary_source_path_;
+  base::FilePath chromium_config_path_;
+  std::string chromium_config_path_utf8_;
   base::FilePath python_path_;
+
+  bool use_chromium_config_;
 
   SourceFile build_config_file_;
   SourceFile arg_file_template_path_;

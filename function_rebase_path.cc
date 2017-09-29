@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 
+#include "base/strings/string_util.h"
 #include "tools/gn/build_settings.h"
 #include "tools/gn/filesystem_utils.h"
 #include "tools/gn/functions.h"
@@ -68,17 +69,45 @@ Value ConvertOnePath(const Scope* scope,
 
   bool looks_like_dir = ValueLooksLikeDir(string_value);
 
+  // Convert to abosulte if we are referencing files under chromium buildconfig.
+  bool is_chromium_build_config = false;
+  if (scope->settings()->build_settings()->use_chromium_config()) {
+    std::string rp = looks_like_dir ?
+        from_dir.ResolveRelativeDir(value, err,
+            scope->settings()->build_settings()->root_path_utf8()).value() :
+        from_dir.ResolveRelativeFile(value, err,
+            scope->settings()->build_settings()->root_path_utf8()).value();
+    is_chromium_build_config =
+        base::StartsWith(rp, "//build/", base::CompareCase::SENSITIVE) ||
+        base::StartsWith(rp, "//buildtools/", base::CompareCase::SENSITIVE) ||
+        base::StartsWith(rp, "//testing/", base::CompareCase::SENSITIVE) ||
+        base::StartsWith(rp, "//tools/", base::CompareCase::SENSITIVE) ||
+        base::StartsWith(rp, "//third_party/googletest/", base::CompareCase::SENSITIVE);
+  }
+
   // System-absolute output special case.
-  if (convert_to_system_absolute) {
+  if (convert_to_system_absolute || is_chromium_build_config) {
     base::FilePath system_path;
     if (looks_like_dir) {
-      system_path = scope->settings()->build_settings()->GetFullPath(
-          from_dir.ResolveRelativeDir(value, err,
-              scope->settings()->build_settings()->root_path_utf8()));
+      if (is_chromium_build_config) {
+        system_path = scope->settings()->build_settings()->GetFullPathChromium(
+            from_dir.ResolveRelativeDir(value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      } else {
+        system_path = scope->settings()->build_settings()->GetFullPath(
+            from_dir.ResolveRelativeDir(value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      }
     } else {
-      system_path = scope->settings()->build_settings()->GetFullPath(
-          from_dir.ResolveRelativeFile(value, err,
-              scope->settings()->build_settings()->root_path_utf8()));
+      if (is_chromium_build_config) {
+        system_path = scope->settings()->build_settings()->GetFullPathChromium(
+            from_dir.ResolveRelativeFile(value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      } else {
+        system_path = scope->settings()->build_settings()->GetFullPath(
+            from_dir.ResolveRelativeFile(value, err,
+                scope->settings()->build_settings()->root_path_utf8()));
+      }
     }
     if (err->has_error())
       return Value();

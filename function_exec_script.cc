@@ -148,6 +148,11 @@ Value RunExecScript(Scope* scope,
     // Fall back to secondary source root when the file doesn't exist.
     script_path = build_settings->GetFullPathSecondary(script_source);
   }
+  if (build_settings->use_chromium_config() &&
+      !base::PathExists(script_path)) {
+    // Fall back to exe dir when the file doesn't exist.
+    script_path = build_settings->GetFullPathChromium(script_source);
+  }
 
   ScopedTrace trace(TraceItem::TRACE_SCRIPT_EXECUTE, script_source.value());
   trace.SetToolchain(settings->toolchain_label());

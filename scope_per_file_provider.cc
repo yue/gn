@@ -36,6 +36,11 @@ const Value* ScopePerFileProvider::GetProgrammaticValue(
   if (ident == variables::kRootOutDir)
     return GetRootOutDir();
 
+  if (ident == "use_chromium_config")
+    return GetUseChromiumConfig();
+  if (ident == "chromium_config_dir")
+    return GetChromiumConfigDir();
+
   if (allow_target_vars_) {
     if (ident == variables::kTargetGenDir)
       return GetTargetGenDir();
@@ -116,4 +121,24 @@ const Value* ScopePerFileProvider::GetTargetOutDir() {
                      scope_, BuildDirType::OBJ)));
   }
   return target_out_dir_.get();
+}
+
+const Value* ScopePerFileProvider::GetUseChromiumConfig() {
+  if (!use_chromium_config_) {
+    use_chromium_config_.reset(new Value(
+        nullptr,
+        scope_->settings()->build_settings()->use_chromium_config()));
+  }
+  return use_chromium_config_.get();
+}
+
+const Value* ScopePerFileProvider::GetChromiumConfigDir() {
+  if (!chromium_config_dir_) {
+    chromium_config_dir_.reset(new Value(
+        nullptr,
+        DirectoryWithNoLastSlash(
+            SourceDir(scope_->settings()->build_settings()->
+                chromium_config_path_utf8()))));
+  }
+  return chromium_config_dir_.get();
 }

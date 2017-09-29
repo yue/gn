@@ -149,6 +149,7 @@ Example .gn file contents
 namespace {
 
 const base::FilePath::CharType kGnFile[] = FILE_PATH_LITERAL(".gn");
+const char kChromiumConfig[] = "/build/config/BUILDCONFIG.gn";
 
 base::FilePath FindDotFile(const base::FilePath& current_dir) {
   base::FilePath try_this_file = current_dir.Append(kGnFile);
@@ -738,20 +739,35 @@ bool Setup::FillOtherConfig(const base::CommandLine& cmdline) {
   }
   build_settings_.SetRootTargetLabel(root_target_label);
 
-  // Build config file.
-  const Value* build_config_value =
-      dotfile_scope_.GetValue("buildconfig", true);
-  if (!build_config_value) {
-    Err(Location(), "No build config file.",
-        "Your .gn file (\"" + FilePathToUTF8(dotfile_name_) + "\")\n"
-        "didn't specify a \"buildconfig\" value.").PrintToStdout();
-    return false;
-  } else if (!build_config_value->VerifyTypeIs(Value::STRING, &err)) {
+  // Whether to use the preset Chromium build config file.
+  const Value* preset_value =
+      dotfile_scope_.GetValue("use_chromium_config", true);
+  if (preset_value && !preset_value->VerifyTypeIs(Value::BOOLEAN, &err)) {
     err.PrintToStdout();
     return false;
   }
-  build_settings_.set_build_config_file(
-      SourceFile(build_config_value->string_value()));
+  build_settings_.set_use_chromium_config(
+      preset_value && preset_value->boolean_value());
+
+  // Build config file.
+  if (build_settings_.use_chromium_config()) {
+    build_settings_.set_build_config_file(SourceFile(
+        FilePathToUTF8(build_settings_.chromium_config_path()) + kChromiumConfig));
+  } else {
+    const Value* build_config_value =
+        dotfile_scope_.GetValue("buildconfig", true);
+    if (!build_config_value) {
+      Err(Location(), "No build config file.",
+          "Your .gn file (\"" + FilePathToUTF8(dotfile_name_) + "\")\n"
+          "didn't specify a \"buildconfig\" value.").PrintToStdout();
+      return false;
+    } else if (!build_config_value->VerifyTypeIs(Value::STRING, &err)) {
+      err.PrintToStdout();
+      return false;
+    }
+    build_settings_.set_build_config_file(
+        SourceFile(build_config_value->string_value()));
+  }
 
   // Targets to check.
   const Value* check_targets_value =
