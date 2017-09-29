@@ -4,6 +4,8 @@
 
 #include <stddef.h>
 
+#include "base/files/file_util.h"
+#include "base/strings/string_util.h"
 #include "gn/build_settings.h"
 #include "gn/filesystem_utils.h"
 #include "gn/functions.h"
@@ -67,6 +69,13 @@ Value ConvertOnePath(const Scope* scope,
   const std::string& string_value = value.string_value();
 
   bool looks_like_dir = ValueLooksLikeDir(string_value);
+  auto* build_settings = scope->settings()->build_settings();
+  bool is_chromium_path = build_settings->IsChromiumPath(
+      looks_like_dir ?
+          from_dir.ResolveRelativeDir(
+              value, err, build_settings->root_path_utf8()).value() :
+          from_dir.ResolveRelativeFile(
+              value, err, build_settings->root_path_utf8()).value());
 
   // System-absolute output special case.
   if (convert_to_system_absolute) {
@@ -76,11 +85,21 @@ Value ConvertOnePath(const Scope* scope,
           from_dir.ResolveRelativeDir(
               value, err,
               scope->settings()->build_settings()->root_path_utf8()));
+      if (is_chromium_path && !base::PathExists(system_path)) {
+        system_path = build_settings->GetFullPathChromium(
+            from_dir.ResolveRelativeDir(
+                value, err, build_settings->root_path_utf8()));
+      }
     } else {
       system_path = scope->settings()->build_settings()->GetFullPath(
           from_dir.ResolveRelativeFile(
               value, err,
               scope->settings()->build_settings()->root_path_utf8()));
+      if (is_chromium_path && !base::PathExists(system_path)) {
+        system_path = build_settings->GetFullPathChromium(
+            from_dir.ResolveRelativeFile(
+                value, err, build_settings->root_path_utf8()));
+      }
     }
     if (err->has_error())
       return Value();
@@ -91,14 +110,25 @@ Value ConvertOnePath(const Scope* scope,
     return result;
   }
 
+  // When rebasing on the source root dir, it means to get the relative path
+  // component, for example "//build" => "build", currrently used by the
+  // buildflag_header.gni file.
+  if (is_chromium_path && to_dir.value() == "//")
+    is_chromium_path = false;
+
   result = Value(function, Value::STRING);
   if (looks_like_dir) {
+    SourceDir resolved_dir = from_dir.ResolveRelativeDir(
+        value, err, build_settings->root_path_utf8());
+    if (is_chromium_path) {
+      base::FilePath resolved_path = build_settings->GetFullPath(resolved_dir);
+      if (!base::PathExists(resolved_path)) {
+        resolved_dir = SourceDir(
+            build_settings->TranslateChromiumPath(resolved_dir));
+      }
+    }
     result.string_value() = RebasePath(
-        from_dir
-            .ResolveRelativeDir(
-                value, err,
-                scope->settings()->build_settings()->root_path_utf8())
-            .value(),
+        resolved_dir.value(),
         to_dir, scope->settings()->build_settings()->root_path_utf8());
     MakeSlashEndingMatchInput(string_value, &result.string_value());
   } else {
@@ -106,6 +136,13 @@ Value ConvertOnePath(const Scope* scope,
         value, err, scope->settings()->build_settings()->root_path_utf8());
     if (err->has_error())
       return Value();
+    if (is_chromium_path) {
+      base::FilePath resolved_path = build_settings->GetFullPath(resolved_file);
+      if (!base::PathExists(resolved_path)) {
+        resolved_file = SourceFile(
+            build_settings->TranslateChromiumPath(resolved_file));
+      }
+    }
     result.string_value() =
         RebasePath(resolved_file.value(), to_dir,
                    scope->settings()->build_settings()->root_path_utf8());
