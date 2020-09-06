@@ -86,7 +86,7 @@ Value ConvertOnePath(const Scope* scope,
   }
 
   // System-absolute output special case.
-  if (convert_to_system_absolute || is_chromium_build_config) {
+  if (convert_to_system_absolute) {
     base::FilePath system_path;
     if (looks_like_dir) {
       if (is_chromium_build_config) {
@@ -124,19 +124,25 @@ Value ConvertOnePath(const Scope* scope,
 
   result = Value(function, Value::STRING);
   if (looks_like_dir) {
-    result.string_value() = RebasePath(
-        from_dir
-            .ResolveRelativeDir(
-                value, err,
-                scope->settings()->build_settings()->root_path_utf8())
-            .value(),
-        to_dir, scope->settings()->build_settings()->root_path_utf8());
-    MakeSlashEndingMatchInput(string_value, &result.string_value());
-  } else {
-    SourceFile resolved_file = from_dir.ResolveRelativeFile(
+    SourceDir raw_resolved_dir = from_dir.ResolveRelativeDir(
         value, err, scope->settings()->build_settings()->root_path_utf8());
     if (err->has_error())
       return Value();
+    const SourceDir& resolved_dir = is_chromium_build_config ?
+        SourceDir("//building/tools/gn/" + raw_resolved_dir.value().substr(2)) :
+        raw_resolved_dir;
+    result.string_value() = RebasePath(
+        resolved_dir.value(),
+        to_dir, scope->settings()->build_settings()->root_path_utf8());
+    MakeSlashEndingMatchInput(string_value, &result.string_value());
+  } else {
+    SourceFile raw_resolved_file = from_dir.ResolveRelativeFile(
+        value, err, scope->settings()->build_settings()->root_path_utf8());
+    if (err->has_error())
+      return Value();
+    const SourceFile& resolved_file = is_chromium_build_config ?
+        SourceFile("//building/tools/gn/" + raw_resolved_file.value().substr(2)) :
+        raw_resolved_file;
     // Special case:
     //   rebase_path("//foo", "//bar") ==> "../foo"
     //   rebase_path("//foo", "//foo") ==> "." and not "../foo"
