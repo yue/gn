@@ -620,7 +620,7 @@ Examples
 )";
 
 int RunDesc(const std::vector<std::string>& args) {
-  if (args.size() != 2 && args.size() != 3) {
+  if (args.size() < 2) {
     Err(Location(), "Unknown command format. See \"gn help desc\"",
         "Usage: \"gn desc <out_dir> <target_name> [<what to display>]\"")
         .PrintToStdout();
@@ -644,13 +644,20 @@ int RunDesc(const std::vector<std::string>& args) {
   std::vector<std::string> target_list;
   target_list.push_back(args[1]);
 
+  bool multiple_targets = cmdline->HasSwitch("multiple-targets");
+  if (multiple_targets) {
+    target_list.reserve(args.size() - 1);
+    for (size_t i = 2; i < args.size(); ++i)
+      target_list.push_back(args[i]);
+  }
+
   if (!ResolveFromCommandLineInput(
           setup, target_list, cmdline->HasSwitch(switches::kDefaultToolchain),
           &target_matches, &config_matches, &toolchain_matches, &file_matches))
     return 1;
 
   std::string what_to_print;
-  if (args.size() == 3)
+  if (!multiple_targets && args.size() == 3)
     what_to_print = args[2];
 
   bool json = cmdline->GetSwitchValueASCII("format") == "json";
