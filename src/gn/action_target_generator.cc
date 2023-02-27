@@ -120,7 +120,7 @@ bool ActionTargetGenerator::FillScript() {
   if (err_->has_error())
     return false;
   auto* build_settings = scope_->settings()->build_settings();
-  if (build_settings->use_chromium_config()) {
+  if (build_settings->IsChromiumPath(script_file.value())) {
     std::string p = FilePathToUTF8(
         build_settings->GetFullPathChromium(script_file));
 #if defined(OS_WIN)
