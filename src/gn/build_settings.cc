@@ -98,7 +98,8 @@ bool BuildSettings::IsChromiumPath(const std::string& path) const {
        base::StartsWith(path, "//testing/", base::CompareCase::SENSITIVE) ||
        base::StartsWith(path, "//tools/", base::CompareCase::SENSITIVE) ||
        base::StartsWith(path, "//third_party/catapult/", base::CompareCase::SENSITIVE) ||
-       base::StartsWith(path, "//third_party/googletest/", base::CompareCase::SENSITIVE));
+       base::StartsWith(path, "//third_party/googletest/", base::CompareCase::SENSITIVE) ||
+       base::StartsWith(path, "//third_party/llvm-build/", base::CompareCase::SENSITIVE));
 }
 
 void BuildSettings::ItemDefined(std::unique_ptr<Item> item) const {
