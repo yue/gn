@@ -131,6 +131,9 @@ class BuildSettings {
   base::FilePath GetFullPathSecondary(const std::string& path,
                                       bool as_file) const;
 
+  // Sets the path to Chromium's build config files.
+  void SetChromiumConfigDir(const base::FilePath& dir);
+
   // Returns the absolute OS path inside the fallback source path.
   base::FilePath GetFullPathChromium(const SourceFile& file) const;
   base::FilePath GetFullPathChromium(const SourceDir& dir) const;
