@@ -80,6 +80,11 @@ base::FilePath BuildSettings::GetFullPathSecondary(const std::string& path,
       .NormalizePathSeparatorsTo('/');
 }
 
+void BuildSettings::SetChromiumConfigDir(const base::FilePath& dir) {
+  chromium_config_path_ = dir;
+  chromium_config_path_utf8_ = FilePathToUTF8(dir);
+}
+
 base::FilePath BuildSettings::GetFullPathChromium(
     const SourceFile& file) const {
   return file.Resolve(chromium_config_path_).NormalizePathSeparatorsTo('/');

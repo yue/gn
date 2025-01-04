@@ -1037,6 +1037,24 @@ bool Setup::FillOtherConfig(const base::CommandLine& cmdline, Err* err) {
   build_settings_.set_use_chromium_config(
       preset_value && preset_value->boolean_value());
 
+  // Preset Chromium build config directory of user defined.
+  const Value* chromium_config_dir_value =
+      dotfile_scope_.GetValue("chromium_config_dir", true);
+  if (chromium_config_dir_value &&
+      !chromium_config_dir_value->VerifyTypeIs(Value::STRING, err)) {
+    err->PrintToStdout();
+    return false;
+  }
+  if (chromium_config_dir_value) {
+    build_settings_.SetChromiumConfigDir(
+        ResolvePath(chromium_config_dir_value->string_value(),
+                    false,
+                    build_settings_.root_path()));
+    if (!preset_value) {
+      build_settings_.set_use_chromium_config(true);
+    }
+  }
+
   // Build config file.
   if (build_settings_.use_chromium_config()) {
     build_settings_.set_build_config_file(SourceFile(
