@@ -90,6 +90,9 @@ class BuildSettings {
   bool use_chromium_config() const { return use_chromium_config_; }
   void set_use_chromium_config(bool u) { use_chromium_config_ = u; }
 
+  // Path to set the Chromium buildconfig directory.
+  void set_chromium_config_dir(const base::FilePath& dir);
+
   const SourceFile& build_config_file() const { return build_config_file_; }
   void set_build_config_file(const SourceFile& f) { build_config_file_ = f; }
 

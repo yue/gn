@@ -140,3 +140,8 @@ const BuildSettings::PrintCallback BuildSettings::swap_print_callback(
   print_callback_ = callback;
   return temp;
 }
+
+void BuildSettings::set_chromium_config_dir(const base::FilePath& dir){
+  chromium_config_path_ = dir; 
+  chromium_config_path_utf8_ = FilePathToUTF8(dir);
+}
